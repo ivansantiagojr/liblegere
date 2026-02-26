@@ -1,4 +1,5 @@
 const std = @import("std");
+const unicode = @import("unicode.zig");
 
 pub fn countWords(text: []const u8) usize {
     var count: usize = 0;
@@ -7,6 +8,16 @@ pub fn countWords(text: []const u8) usize {
         count += 1;
     }
 
+    return count;
+}
+
+pub fn countCharacters(text: []const u8) usize {
+    var count: usize = 0;
+    const view = std.unicode.Utf8View.init(text) catch return 0;
+    var it = view.iterator();
+    while (it.nextCodepoint()) |cp| {
+        if (unicode.isAlphanumeric(cp)) count += 1;
+    }
     return count;
 }
 
@@ -41,4 +52,34 @@ test "countWords with multiple irregular spaces" {
 
 test "countWords considers characters between spaces as a word" {
     try std.testing.expectEqual(2, countWords("Hello !"));
+}
+
+test "countWords considers non-ascii" {
+    try std.testing.expectEqual(2, countWords("Olá, mundo!"));
+}
+
+test "countCharacters with 5 characters" {
+    try std.testing.expectEqual(5, countCharacters("hello"));
+}
+
+test "countCharacters does not consider spaces" {
+    try std.testing.expectEqual(10, countCharacters("hello world"));
+}
+
+test "countCharacters does not count line breaks" {
+    const text_with_line_breaks =
+        \\hello
+        \\world
+    ;
+    try std.testing.expectEqual(10, countCharacters(text_with_line_breaks));
+}
+
+test "countCharacters does not consider punctuations" {
+    try std.testing.expectEqual(5, countCharacters("hello!"));
+    try std.testing.expectEqual(0, countCharacters(",.;:!"));
+}
+
+test "countCharacters considers non-ascii characters" {
+    try std.testing.expectEqual(3, countCharacters("Olá"));
+    try std.testing.expectEqual(5, countCharacters("áéíóú"));
 }
